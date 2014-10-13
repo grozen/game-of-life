@@ -1,14 +1,25 @@
 -- TODO: Actually make this a module
 
-data Cell = Full | Empty deriving (Eq)
+type Neighbours = Int
+data CellContents = Full | Empty deriving (Eq)
 
-instance Show Cell where
-    show Full = "█"
-    show Empty = "·"
+instance Show CellContents where
+  show Full = "█"
+  show Empty = "·"
+
+type Cell = (CellContents, Neighbours)
 
 data Board = Board [[Cell]]
 
 instance Show Board where
-    show (Board []) = "Null board"
-    show (Board [cells]) = concat $ map show cells
-    show (Board (line:lines)) = show (Board [line]) ++ "\n" ++ show (Board lines)
+  show (Board []) = "Null board"
+  show (Board [cells]) = concat $ map show $ map fst cells
+  show (Board (cells:lines)) = show (Board [cells]) ++ "\n" ++ show (Board lines)
+
+resetNeighbours :: Board -> Board
+resetNeighbours (Board rows) = Board $ map resetRow rows
+  where resetRow [] = []
+        resetRow cells = map (\(contents, neighbours) -> (contents, 0)) cells
+
+--calculateNeighbours :: Board -> Board
+

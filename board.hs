@@ -1,36 +1,33 @@
 -- TODO: Actually make this a module
+import qualified Data.Map as Map
+import Control.Applicative
+import Data.List.Split
 
-type Neighbours = Int
-data CellContents = Full | Empty deriving (Eq)
+data Cell = Full | Empty
 
-instance Show CellContents where
+instance Show Cell where
   show Full = "█"
   show Empty = "·"
 
-type Cell = (CellContents, Neighbours)
-
-data Board = Board [[Cell]]
+data Board = Board {
+           width :: Int,
+           height :: Int,
+           contents :: Map.Map (Int, Int) Cell
+           }
 
 instance Show Board where
-  show (Board []) = "Null board"
-  show (Board [cells]) = concat $ map show $ map fst cells
-  show (Board (cells:rows)) = show (Board [cells]) ++ "\n" ++ show (Board rows)
+  show board =
+    let coordinates = (\x y -> (y, x)) <$> [1..(height board)] <*> [1..(width board)]
+        sequence = foldl (\string coordinate -> string ++ (show $ (contents board) Map.! coordinate)) "" coordinates
+    in  unlines $ chunksOf (width board) sequence
 
-resetNeighbours :: Board -> Board
-resetNeighbours (Board rows) = Board $ map resetRow rows
-  where resetRow [] = []
-        resetRow cells = map (\(contents, neighbours) -> (contents, 0)) cells
-
-calculateNeighbours :: Board -> Board
-calculateNeighbours (Board rows) = Board $ pushNeighbours $ pullNeighbours rows
-  where pushNeighbours [] = []
-        pushNeighbours [[]] = [[]]
-        pushNeighbours [cells] = [pushRow cells]
-        pushNeighbours [cells:nextCells:rows] = (pushRow cells):(pushNeighbours (pushNextRow cells nextCells):rows)
-        pushRow [] = []
-        pushRow [_] = [_]
-        pushRow first@(Full, _):(content, neighbours):cells = first:(pushRow (content, neighbours + 1):cells)
-        updateNextRow [] nextCells = nextCells
-        -- Maybe some take 2 drop 2 action here?
-        -- updateNextRow [(Full, _)] nextCells = nextCells
-
+fromRowList :: [[Cell]] -> Board
+fromRowList [] = Board { width = 0, height = 0, contents = Map.empty }
+fromRowList rows =
+  let width' = foldl max 0 $ map length rows
+      height' = length rows
+      fullRows = map (\row -> take width' $ row ++ repeat Empty) rows
+      processRow (y, contents') row = (y + 1, snd $ accumulateCells 1 y contents' row)
+      accumulateCells x y contents' row = foldl (\(x, contents'') cell -> (x + 1, Map.insert (x, y) cell contents'')) (x, contents') row
+      returnBoard (_, contents') = Board { width = width', height = height', contents = contents' }
+  in  returnBoard $ foldl processRow (1, Map.empty) fullRows

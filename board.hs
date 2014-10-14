@@ -1,4 +1,10 @@
--- TODO: Actually make this a module
+module Board
+( Cell(..),
+  Board,
+  fromRowList,
+  tick
+) where
+
 import qualified Data.Map as Map
 import Control.Applicative
 import Data.List
